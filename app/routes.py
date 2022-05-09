@@ -1,12 +1,17 @@
 import re
 from turtle import title
+from wsgiref import headers
 from flask import Blueprint, jsonify, abort, make_response, request
 from sqlalchemy import false
 from app import db
 from app.models.task import Task
+from app.models.goal import Goal
 from datetime import datetime
+import requests
+import os
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
+goals_bp = Blueprint("goals", __name__, url_prefix="/goals")
 
 # helper functions
 def validate_task(task_id):
@@ -105,9 +110,18 @@ def mark_task_completed(task_id, is_complete):
     task = validate_task(task_id)
     if is_complete == "mark_complete":
         task.completed_at = datetime.utcnow()
+        send_message_to_slack(task)
     elif is_complete == "mark_incomplete":
         task.completed_at = None
     else:
         abort(make_response({"details": f"unsupported command '{is_complete}'"}, 404))
     db.session.commit()
     return task_dictionary(task), 200
+
+def send_message_to_slack(task):
+    slack_token = os.environ["SLACK_API_TOKEN"]
+    headers = {"Authorization":slack_token}
+    message = f"Someone just completed the task '{task.title}'."
+    slackkeys = {"channel": "task-notifications", "text": message}
+    slack_request = requests.get('https://slack.com/api/chat.postMessage', params=slackkeys, headers=headers)
+
