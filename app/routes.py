@@ -44,7 +44,13 @@ def add_one_task():
 
 @tasks_bp.route("", methods=["GET"])
 def get_all_tasks():
-    tasks = Task.query.all()
+    params = request.args
+    if "sort" in params and params["sort"] == "asc":
+        tasks = Task.query.order_by(Task.title.asc())
+    elif "sort" in params and params["sort"] == "desc":
+        tasks = Task.query.order_by(Task.title.desc())
+    else:
+        tasks = Task.query.all()
     task_response = []
     for task in tasks:
         task_response.append({
