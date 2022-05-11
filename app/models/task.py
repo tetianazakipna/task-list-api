@@ -8,3 +8,23 @@ class Task(db.Model):
     completed_at = db.Column(db.DateTime, nullable=True)
     goal_id = db.Column(db.Integer, db.ForeignKey('goal.goal_id'))
     goal = db.relationship("Goal", back_populates="tasks")
+
+    def task_dictionary(self):
+        if self.completed_at is None:
+            return {
+                "task": {
+                    "id":self.task_id,
+                    "title":self.title,
+                    "description":self.description,
+                    "is_complete": False
+                }
+            }
+        else:
+            return {
+                "task": {
+                    "id":self.task_id,
+                    "title":self.title,
+                    "description":self.description,
+                    "is_complete": True
+                }
+            }

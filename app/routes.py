@@ -1,6 +1,3 @@
-import re
-from turtle import title
-from wsgiref import headers
 from flask import Blueprint, jsonify, abort, make_response, request
 from sqlalchemy import false
 from app import db
@@ -24,26 +21,6 @@ def validate_task(task_id):
         abort(make_response({"details": f"task with task id {task_id} is not found"}, 404))
     return task 
 
-def task_dictionary(task):
-    if task.completed_at is None:
-        return {
-            "task": {
-                "id":task.task_id,
-                "title":task.title,
-                "description":task.description,
-                "is_complete": False
-            }
-        }
-    else:
-        return {
-            "task": {
-                "id":task.task_id,
-                "title":task.title,
-                "description":task.description,
-                "is_complete": True
-            }
-        }
-
 # route functions for tasks
 @tasks_bp.route("", methods=["POST"])
 def add_one_task():
@@ -60,7 +37,7 @@ def add_one_task():
     db.session.add(new_task)
     db.session.commit()
 
-    return task_dictionary(new_task), 201
+    return new_task.task_dictionary(), 201
 
 @tasks_bp.route("", methods=["GET"])
 def get_all_tasks():
@@ -84,7 +61,7 @@ def get_all_tasks():
 @tasks_bp.route("/<task_id>", methods=["GET"])
 def get_one_task(task_id):
     task = validate_task(task_id)
-    return task_dictionary(task), 200
+    return task.task_dictionary(), 200
 
 @tasks_bp.route("/<task_id>", methods=["PUT"])
 def update_one_task(task_id):
@@ -96,7 +73,7 @@ def update_one_task(task_id):
     task.description = request_body["description"]
 
     db.session.commit()
-    return task_dictionary(task), 200
+    return task.task_dictionary(), 200
 
 @tasks_bp.route("/<task_id>", methods=["DELETE"])
 def delete_one_task(task_id):
@@ -116,7 +93,7 @@ def mark_task_completed(task_id, is_complete):
     else:
         abort(make_response({"details": f"unsupported command '{is_complete}'"}, 404))
     db.session.commit()
-    return task_dictionary(task), 200
+    return task.task_dictionary(), 200
 
 def send_message_to_slack(task):
     slack_token = os.environ["SLACK_API_TOKEN"]
@@ -126,14 +103,6 @@ def send_message_to_slack(task):
     slack_request = requests.get('https://slack.com/api/chat.postMessage', params=slackkeys, headers=headers)
 
 # helper functions for goals
-def goal_dictionary(goal):
-    return{
-        "goal":{
-            "id":goal.goal_id,
-            "title":goal.title
-        }
-    }
-
 def validate_goal(goal_id):
     try:
        goal_id = int(goal_id)
@@ -153,7 +122,7 @@ def post_one_goal():
     new_goal = Goal(title = request_body["title"])
     db.session.add(new_goal)
     db.session.commit()
-    return goal_dictionary(new_goal), 201
+    return new_goal.goal_dictionary(), 201
 
 @goals_bp.route("", methods=["GET"])
 def get_all_goals():
@@ -171,7 +140,7 @@ def get_all_goals():
 @goals_bp.route("/<goal_id>", methods=["GET"])
 def get_one_goal(goal_id):
     goal = validate_goal(goal_id)
-    return goal_dictionary(goal), 200
+    return goal.goal_dictionary(), 200
 
 @goals_bp.route("/<goal_id>", methods=["PUT"])
 def update_one_goal(goal_id):
@@ -181,7 +150,7 @@ def update_one_goal(goal_id):
         return jsonify({"details": f"Request must include title."}), 400
     goal.title = request_body["title"]
     db.session.commit()
-    return goal_dictionary(goal)
+    return goal.goal_dictionary()
 
 @goals_bp.route("/<goal_id>", methods=["DELETE"])
 def delete_one_goal(goal_id):
@@ -189,4 +158,5 @@ def delete_one_goal(goal_id):
     db.session.delete(goal)
     db.session.commit()
     return jsonify({'details': f'Goal {goal_id} "{goal.title}" successfully deleted'}), 200
+
 
