@@ -159,4 +159,39 @@ def delete_one_goal(goal_id):
     db.session.commit()
     return jsonify({'details': f'Goal {goal_id} "{goal.title}" successfully deleted'}), 200
 
+# routes for goals and tasks
+@goals_bp.route("/<goal_id>/tasks", methods=["POST"])
+def connect_tasks_to_goals(goal_id):
+    goal = validate_goal(goal_id)
+    request_body = request.get_json()
+    try:
+        task_ids = request_body["task_ids"]
+    except KeyError:
+        return jsonify({"details":"There are no task ids in request body. Add task ids."}), 400
+    if not isinstance(task_ids, list):
+        return jsonify({"details":"Task ids expected in a list"}), 400
+    tasks_list = []
+    for task_id in task_ids:
+        task = validate_task(task_id)
+        tasks_list.append(task_id)
+        goal.tasks.append(task)
+    db.session.commit()
+    return {
+        "id":goal.goal_id,
+        "task_ids":tasks_list
+    }, 200
 
+@goals_bp.route("/<goal_id>/tasks", methods=["GET"])
+def get_tasks_connected_to_goals(goal_id):
+    goal = validate_goal(goal_id)
+    tasks_in_goal = []
+    for task in goal.tasks:
+        task = task.task_dictionary()
+        current_task = task["task"]
+        tasks_in_goal.append(current_task)
+    
+    return {
+        "id": goal.goal_id,
+        "title": goal.title,
+        "tasks": tasks_in_goal
+    }

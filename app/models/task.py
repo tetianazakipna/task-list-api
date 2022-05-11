@@ -10,21 +10,19 @@ class Task(db.Model):
     goal = db.relationship("Goal", back_populates="tasks")
 
     def task_dictionary(self):
+        basic_dictionary = {
+            "id":self.task_id,
+            "title":self.title,
+            "description":self.description
+        }
         if self.completed_at is None:
-            return {
-                "task": {
-                    "id":self.task_id,
-                    "title":self.title,
-                    "description":self.description,
-                    "is_complete": False
-                }
-            }
+            basic_dictionary["is_complete"] = False
         else:
-            return {
-                "task": {
-                    "id":self.task_id,
-                    "title":self.title,
-                    "description":self.description,
-                    "is_complete": True
-                }
-            }
+            basic_dictionary["is_complete"] = True
+        
+        if self.goal_id is not None:
+            basic_dictionary["goal_id"] = self.goal_id
+        
+        return {
+            "task": basic_dictionary
+        }
