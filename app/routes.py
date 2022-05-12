@@ -50,12 +50,9 @@ def get_all_tasks():
         tasks = Task.query.all()
     task_response = []
     for task in tasks:
-        task_response.append({
-            "id": task.task_id,
-            "title": task.title,
-            "description": task.description,
-            "is_complete": False
-        })
+        task = task.task_dictionary()
+        current_task = task["task"]
+        task_response.append(current_task)
     return jsonify(task_response), 200
 
 @tasks_bp.route("/<task_id>", methods=["GET"])
